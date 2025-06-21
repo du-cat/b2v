@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SentinelPOS Guardian - Security Monitoring Platform</title>
+    <meta name="description" content="Comprehensive security monitoring platform for Point of Sale (POS) systems" />
+    
+    <!-- Preload critical resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- CRITICAL FIX: Add CSP meta tag for development -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; object-src 'none'; img-src 'self' https://images.pexels.com data:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.opencagedata.com; font-src 'self'; frame-src 'self'; media-src 'self';">
+    
+    <!-- CRITICAL FIX: Add early error detection script -->
+    <script>
+      // Early error detection - before React loads
+      window.addEventListener('error', function(event) {
+        console.error('Early error detected:', event.error || event.message);
+        
+        // Check for localStorage corruption
+        try {
+          const storedSession = localStorage.getItem('supabase.auth.token');
+          if (storedSession) {
+            try {
+              JSON.parse(storedSession); // Test if valid JSON
+            } catch (e) {
+              console.error('Corrupted session data detected, clearing localStorage');
+              localStorage.removeItem('supabase.auth.token');
+              localStorage.removeItem('currentStoreId');
+            }
+          }
+        } catch (e) {
+          console.error('Error accessing localStorage:', e);
+        }
+      });
+      
+      // Enhanced error handling for missing root element
+      window.addEventListener('DOMContentLoaded', function() {
+        console.log('🔍 DOM loaded, checking for root element...');
+        
+        const root = document.getElementById('root');
+        if (!root) {
+          console.error('🚨 Critical Error: Root element not found!');
+          
+          document.body.innerHTML = `
+            <div style="
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              min-height: 100vh; 
+              font-family: system-ui, -apple-system, sans-serif;
+              background-color: #f8fafc;
+              color: #334155;
+              text-align: center;
+              padding: 20px;
+            ">
+              <div>
+                <h1 style="color: #dc2626; margin-bottom: 16px; font-size: 24px;">Application Error</h1>
+                <p style="margin-bottom: 16px;">The application root element is missing.</p>
+                <p style="margin-bottom: 24px; font-size: 14px; color: #64748b;">
+                  This indicates a critical build or deployment issue.
+                </p>
+                <button onclick="localStorage.removeItem('supabase.auth.token'); localStorage.removeItem('currentStoreId'); window.location.reload();" style="
+                  background-color: #dc2626; 
+                  color: white; 
+                  border: none; 
+                  padding: 12px 24px; 
+                  border-radius: 6px; 
+                  cursor: pointer;
+                  font-size: 16px;
+                  margin-right: 8px;
+                ">
+                  Clear Data & Refresh
+                </button>
+                <button onclick="window.location.href='/'" style="
+                  background-color: #64748b; 
+                  color: white; 
+                  border: none; 
+                  padding: 12px 24px; 
+                  border-radius: 6px; 
+                  cursor: pointer;
+                  font-size: 16px;
+                ">
+                  Go Home
+                </button>
+              </div>
+            </div>
+          `;
+        } else {
+          console.log('✅ Root element found successfully');
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Fallback for JavaScript disabled -->
+    <noscript>
+      <div style="
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        min-height: 100vh; 
+        font-family: system-ui, -apple-system, sans-serif;
+        background-color: #f8fafc;
+        color: #334155;
+        text-align: center;
+        padding: 20px;
+      ">
+        <div>
+          <h1 style="color: #dc2626; margin-bottom: 16px; font-size: 24px;">JavaScript Required</h1>
+          <p style="margin-bottom: 16px;">SentinelPOS Guardian requires JavaScript to function properly.</p>
+          <p>Please enable JavaScript in your browser and refresh the page.</p>
+        </div>
+      </div>
+    </noscript>
+  </body>
+</html>

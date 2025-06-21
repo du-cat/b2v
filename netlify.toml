@@ -1,0 +1,16 @@
+# Netlify configuration file
+
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+# Set custom headers including Content Security Policy
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; object-src 'none'; img-src 'self' https://images.pexels.com data:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.opencagedata.com; font-src 'self'; frame-src 'self'; media-src 'self';"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Cache-Control = "public, max-age=0, must-revalidate"
