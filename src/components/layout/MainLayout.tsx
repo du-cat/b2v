@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { Sidebar } from './Sidebar';
-import { useAppContext } from '../../shared/contexts/AppContext';
-import { useAuthStore } from '@/features/auth/store/AuthStore';
-import { useStoreStore } from '@/features/stores/store/StoreStore';
+import { useApp } from '../../shared/contexts/AppContext';
+import { useAuthStore } from '../../features/auth/store/AuthStore';
+import { useStoreStore } from '../../features/stores/store/StoreStore';
+import type { AuthState } from '../../features/auth/types';
+import type { StoreState } from '../../features/stores/types';
 import { Button } from '../ui/Button';
 import { RefreshCw, LogOut, AlertTriangle } from 'lucide-react';
 import { ErrorBoundary } from '../ErrorBoundary';
@@ -17,17 +19,17 @@ export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   // Use context for app-wide state (no direct store coupling)
-  const { isAppReady, hasValidSession } = useAppContext();
+  const { isAppReady, hasValidSession } = useApp();
   
   // IMPORTANT: Only subscribe to specific store slices needed
-  const user = useAuthStore(state => state.user);
-  const logout = useAuthStore(state => state.logout);
-  const stores = useStoreStore(state => state.stores);
-  const isStoreLoading = useStoreStore(state => state.isLoading);
-  const storeError = useStoreStore(state => state.error);
-  const clearStoreError = useStoreStore(state => state.clearError);
-  const resetAttemptedStoreInit = useStoreStore(state => state.resetAttemptedStoreInit);
-  const initializeStoreContext = useStoreStore(state => state.initializeStoreContext);
+  const user = useAuthStore((state: AuthState) => state.user);
+  const logout = useAuthStore((state: AuthState) => state.logout);
+  const stores = useStoreStore((state: StoreState) => state.stores);
+  const isStoreLoading = useStoreStore((state: StoreState) => state.isLoading);
+  const storeError = useStoreStore((state: StoreState) => state.error);
+  const clearStoreError = useStoreStore((state: StoreState) => state.clearError);
+  const resetAttemptedStoreInit = useStoreStore((state: StoreState) => state.resetAttemptedStoreInit);
+  const initializeStoreContext = useStoreStore((state: StoreState) => state.initializeStoreContext);
   
   const navigate = useNavigate();
   const location = useLocation();

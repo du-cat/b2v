@@ -21,4 +21,14 @@ export interface StoreState {
   error: string | null;
   retryCount: number;
   hasAttemptedStoreInit: boolean;
+  // Methods
+  fetchStores: (userId: string) => Promise<Store[]>;
+  setCurrentStore: (storeId: string) => void;
+  createStore: (storeData: CreateStoreData) => Promise<Store | null>;
+  updateStore: (storeId: string, storeData: Partial<CreateStoreData>) => Promise<Store | null>;
+  initializeStoreContext: (userId: string) => Promise<void>;
+  clearError: () => void;
+  resetRetryCount: () => void;
+  resetAttemptedStoreInit: () => void;
+  checkSessionValidity: () => Promise<boolean>;
 }

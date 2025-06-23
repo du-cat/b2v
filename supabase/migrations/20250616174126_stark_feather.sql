@@ -41,62 +41,66 @@ END $$;
 GRANT USAGE ON SCHEMA auth TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION auth.uid() TO authenticated, anon;
 
+-- Create INSERT policy: Users can only create stores for themselves
+CREATE POLICY "Users can create their own stores" ON stores
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (owner_id = auth.uid());
+
+-- Create SELECT policy: Users can only view their own stores
+CREATE POLICY "Users can view their own stores" ON stores
+  FOR SELECT
+  TO authenticated
+  USING (owner_id = auth.uid());
+
+-- Create UPDATE policy: Users can only update their own stores
+CREATE POLICY "Users can update their own stores" ON stores
+  FOR UPDATE
+  TO authenticated
+  USING (owner_id = auth.uid())
+  WITH CHECK (owner_id = auth.uid());
+
+-- Create DELETE policy: Users can only delete their own stores
+CREATE POLICY "Users can delete their own stores" ON stores
+  FOR DELETE
+  TO authenticated
+  USING (owner_id = auth.uid());
+
 -- Create a test function to verify auth.uid() is working
 CREATE OR REPLACE FUNCTION test_auth_context()
 RETURNS TABLE(
   current_user_id uuid,
   current_role text,
   session_valid boolean
-)
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
+) LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
-  RETURN QUERY SELECT 
-    auth.uid() as current_user_id,
-    current_setting('role', true) as current_role,
-    (auth.uid() IS NOT NULL) as session_valid;
+  RETURN QUERY
+  SELECT 
+    auth.uid()::uuid,
+    current_user::text,
+    (auth.uid() IS NOT NULL)::boolean;
 END;
 $$;
 
--- Create a helper function to debug store creation issues
-CREATE OR REPLACE FUNCTION debug_store_creation(test_owner_id uuid)
+-- Create a debug function for store creation
+CREATE OR REPLACE FUNCTION debug_store_creation()
 RETURNS TABLE(
-  auth_uid uuid,
-  provided_owner_id uuid,
-  ids_match boolean,
+  user_id uuid,
   can_insert boolean,
-  error_message text
-)
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  current_auth_uid uuid;
-  test_result boolean;
-  error_msg text;
+  can_select boolean,
+  can_update boolean,
+  can_delete boolean,
+  role text
+) LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
-  -- Get current auth.uid()
-  current_auth_uid := auth.uid();
-  
-  -- Test if we can theoretically insert
-  test_result := (current_auth_uid IS NOT NULL AND current_auth_uid = test_owner_id);
-  
-  -- Determine error message
-  IF current_auth_uid IS NULL THEN
-    error_msg := 'auth.uid() is NULL - user not authenticated';
-  ELSIF current_auth_uid != test_owner_id THEN
-    error_msg := 'auth.uid() does not match provided owner_id';
-  ELSE
-    error_msg := 'No issues detected';
-  END IF;
-  
-  RETURN QUERY SELECT 
-    current_auth_uid as auth_uid,
-    test_owner_id as provided_owner_id,
-    (current_auth_uid = test_owner_id) as ids_match,
-    test_result as can_insert,
-    error_msg as error_message;
+  RETURN QUERY
+  SELECT
+    auth.uid()::uuid,
+    has_table_privilege(current_user, 'stores', 'INSERT')::boolean,
+    has_table_privilege(current_user, 'stores', 'SELECT')::boolean,
+    has_table_privilege(current_user, 'stores', 'UPDATE')::boolean,
+    has_table_privilege(current_user, 'stores', 'DELETE')::boolean,
+    current_user::text;
 END;
 $$;
 
@@ -152,7 +156,7 @@ CREATE INDEX IF NOT EXISTS idx_stores_created_at_performance ON stores(created_a
 
 -- Grant execute permissions on helper functions
 GRANT EXECUTE ON FUNCTION test_auth_context() TO authenticated;
-GRANT EXECUTE ON FUNCTION debug_store_creation(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION debug_store_creation() TO authenticated;
 
 -- Add comment to document the RLS setup
 COMMENT ON TABLE stores IS 'Stores table with comprehensive RLS. Users can only access stores they own (owner_id = auth.uid()). Use debug_store_creation() function to troubleshoot issues.';

@@ -1,6 +1,6 @@
 import { supabase, safeSupabaseCall, validateSession } from '../../../lib/supabase';
 import { playSoundSafely } from '../../../utils/soundUtils';
-import type { Notification, CreateNotificationData } from '../types';
+import type { Notification, CreateNotificationData, NotificationSeverity } from '../types';
 
 /**
  * Notification service following Single Responsibility Principle
@@ -14,54 +14,58 @@ export class NotificationService {
     try {
       console.log('🔄 NotificationService: Fetching notifications for user:', userId);
       
-      // Validate session before making request
+      // Validate userId
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+
       const { isValid, error: sessionError } = await validateSession();
       if (!isValid) {
-        console.error('❌ Session validation failed:', sessionError);
-        throw new Error('SESSION_EXPIRED');
+        throw new Error(sessionError || 'SESSION_EXPIRED');
       }
-      
-      const result = await safeSupabaseCall(
-        async () => {
-          const { data, error } = await supabase
-            .from('notifications')
-            .select('id, user_id, message, severity, is_read, created_at')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(50);
-          return { data, error };
-        },
-        { data: [], error: new Error('Supabase not configured') },
-        'Fetch notifications'
-      );
-      
+
+      // Verify the current user matches the requested userId
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('User not authenticated');
+      }
+
+      if (user.id !== userId) {
+        throw new Error('User not authorized to access these notifications');
+      }
+
+      const result = await safeSupabaseCall(async () => {
+        return await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+      });
+
       if (result.error) {
-        // Handle missing table gracefully
-        if (result.error.code === '42P01') {
-          console.warn('⚠️ Notifications table does not exist, using mock data');
-          return this.getMockNotifications(userId);
-        }
-        
-        // Handle auth-related errors
-        if (result.error.code === '42501' || result.error.message.includes('permission') || result.error.message.includes('RLS')) {
-          throw new Error('SESSION_EXPIRED');
-        }
-        
-        throw result.error;
+        console.error('❌ Notification fetch error:', result.error);
+        throw new Error(result.error);
       }
+
+      // Ensure proper typing of notifications
+      const notifications = (result.data || []).map(notification => ({
+        id: notification.id,
+        user_id: notification.user_id,
+        message: notification.message,
+        type: notification.type || 'system',
+        severity: notification.severity as NotificationSeverity,
+        is_read: notification.is_read || false,
+        created_at: notification.created_at
+      }));
+
+      return { notifications, error: null };
       
-      console.log(`✅ NotificationService: Successfully fetched ${result.data.length} notifications`);
-      return { notifications: result.data as Notification[], error: null };
     } catch (error) {
       console.error('❌ NotificationService: Fetch notifications failed:', error);
-      const errorMessage = (error as Error).message;
-      
-      if (errorMessage === 'SESSION_EXPIRED') {
-        return { notifications: [], error: 'SESSION_EXPIRED' };
-      }
-      
-      // Fallback to mock data on any error
-      return this.getMockNotifications(userId);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to fetch notifications';
+      return { notifications: [], error: errorMessage };
     }
   }
 
@@ -149,42 +153,49 @@ export class NotificationService {
   /**
    * Create a new notification
    */
-  static async createNotification(notificationData: CreateNotificationData): Promise<{ notification: Notification | null; error: string | null }> {
+  static async createNotification(data: CreateNotificationData): Promise<{ notification: Notification | null; error: string | null }> {
     try {
-      // Validate session before making request
+      console.log('🔄 NotificationService: Creating notification');
+      
       const { isValid, error: sessionError } = await validateSession();
       if (!isValid) {
-        throw new Error('SESSION_EXPIRED');
+        throw new Error(sessionError || 'SESSION_EXPIRED');
       }
       
-      const result = await safeSupabaseCall(
-        async () => {
-          const { data, error } = await supabase
-            .from('notifications')
-            .insert([{
-              ...notificationData,
-              is_read: false,
-              created_at: new Date().toISOString()
-            }])
-            .select()
-            .single();
-          return { data, error };
-        },
-        { data: null, error: new Error('Supabase not configured') },
-        'Create notification'
-      );
+      const timestamp = new Date().toISOString();
+      
+      const result = await safeSupabaseCall(async () => {
+        return await supabase
+          .from('notifications')
+          .insert([{
+            user_id: data.user_id,
+            message: data.message,
+            type: data.type || 'system',
+            severity: data.severity,
+            is_read: false,
+            created_at: timestamp
+          }])
+          .select()
+          .single();
+      });
       
       if (result.error) {
-        if (result.error.code === '42501' || result.error.message.includes('permission')) {
-          throw new Error('SESSION_EXPIRED');
-        }
-        throw result.error;
+        throw new Error(result.error);
       }
+
+      const notification = {
+        ...result.data,
+        severity: result.data.severity as NotificationSeverity
+      };
+
+      return { notification, error: null };
       
-      return { notification: result.data as Notification, error: null };
     } catch (error) {
       console.error('❌ NotificationService: Create notification failed:', error);
-      return { notification: null, error: (error as Error).message };
+      return {
+        notification: null,
+        error: error instanceof Error ? error.message : 'Failed to create notification'
+      };
     }
   }
 

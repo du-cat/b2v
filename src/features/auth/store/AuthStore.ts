@@ -1,16 +1,9 @@
 import { create } from 'zustand';
 import { AuthService } from '../services/AuthService';
 import type { AuthState, LoginCredentials, SignupData } from '../types';
-import toast from 'react-hot-toast';
 import { supabase } from '../../../lib/supabase';
 
-/**
- * Authentication store following Single Responsibility Principle
- * Manages auth state only - no business logic
- * FIXED: Added session persistence and cross-tab support
- */
 interface AuthStore extends AuthState {
-  // Actions
   initialize: () => Promise<void>;
   login: (credentials: LoginCredentials) => Promise<void>;
   signup: (signupData: SignupData) => Promise<void>;
@@ -23,26 +16,20 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   // State
   user: null,
   session: null,
-  isLoading: true,
+  isLoading: false,
   error: null,
   isInitialized: false,
 
-  // Actions
+  clearError: () => set({ error: null }),
+
   initialize: async () => {
     try {
       set({ isLoading: true, error: null });
       
-      // CRITICAL FIX: Check for persisted session in localStorage
-      const persistedSession = localStorage.getItem('supabase.auth.token');
-      if (persistedSession) {
-        console.log('🔍 Found persisted session in localStorage');
-      }
-      
       const result = await AuthService.initializeSession();
       
-      // CRITICAL FIX: If session initialization fails, clear localStorage to prevent infinite loading
       if (result.error === 'SESSION_EXPIRED' || !result.user) {
-        console.log('🔄 Clearing invalid session data from localStorage');
+        console.log('🔄 Clearing invalid session data');
         localStorage.removeItem('supabase.auth.token');
         localStorage.removeItem('currentStoreId');
       }
@@ -55,31 +42,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         isInitialized: true
       });
       
-      // Set up auth state change listener for cross-tab support
-      const { data: { subscription } } = await supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          console.log('🔄 Auth state changed:', event);
-          
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            // Refresh the store with the latest user data
-            const { user, session: newSession, error } = await AuthService.initializeSession();
-            set({ user, session: newSession, error });
-          } else if (event === 'SIGNED_OUT') {
-            set({ user: null, session: null });
-            // CRITICAL FIX: Clear localStorage on sign out
-            localStorage.removeItem('supabase.auth.token');
-            localStorage.removeItem('currentStoreId');
-          }
-        }
-      );
-      
-      // Clean up subscription on unmount
-      return () => {
-        subscription.unsubscribe();
-      };
     } catch (error) {
-      console.error('❌ AuthStore: Initialize failed:', error);
-      // CRITICAL FIX: Clear localStorage on initialization failure
+      console.error('❌ Auth initialization failed:', error);
       localStorage.removeItem('supabase.auth.token');
       localStorage.removeItem('currentStoreId');
       
@@ -99,8 +63,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       
       const result = await AuthService.login(credentials);
       
-      if (result.error) {
-        throw new Error(result.error);
+      if (result.error || !result.user || !result.session) {
+        throw new Error(result.error || 'Login failed - no valid session');
       }
       
       set({
@@ -108,18 +72,19 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         session: result.session,
         error: null,
         isLoading: false,
-        isInitialized: true
+        isInitialized: true  // Ensure we're initialized after successful login
       });
       
-      toast.success('Login successful!');
     } catch (error) {
-      const errorMessage = (error as Error).message;
+      console.error('❌ Login failed:', error);
       set({
-        error: errorMessage,
-        isLoading: false
+        user: null,
+        session: null,
+        error: (error as Error).message,
+        isLoading: false,
+        isInitialized: true  // Still mark as initialized even on failure
       });
-      toast.error(errorMessage);
-      throw error;
+      throw error;  // Re-throw to let UI handle the error
     }
   },
 
@@ -141,14 +106,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         isInitialized: true
       });
       
-      toast.success('Account created successfully!');
     } catch (error) {
-      const errorMessage = (error as Error).message;
+      console.error('❌ Signup failed:', error);
       set({
-        error: errorMessage,
+        error: (error as Error).message,
         isLoading: false
       });
-      toast.error(errorMessage);
       throw error;
     }
   },
@@ -157,10 +120,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       
-      const result = await AuthService.logout();
+      const { error } = await supabase.auth.signOut();
       
-      if (result.error) {
-        throw new Error(result.error);
+      if (error) {
+        throw new Error(error.message);
       }
       
       set({
@@ -175,17 +138,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       localStorage.removeItem('supabase.auth.token');
       localStorage.removeItem('currentStoreId');
       
-      toast.success('Logged out successfully');
     } catch (error) {
-      console.error('❌ AuthStore: Logout failed:', error);
-      // CRITICAL FIX: Clear localStorage even on logout failure
-      localStorage.removeItem('supabase.auth.token');
-      localStorage.removeItem('currentStoreId');
-      
+      console.error('❌ Logout failed:', error);
       set({
         error: (error as Error).message,
         isLoading: false
       });
+      throw error;
     }
   },
 
@@ -216,9 +175,5 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       });
       throw error;
     }
-  },
-
-  clearError: () => {
-    set({ error: null });
   }
 }));

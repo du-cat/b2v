@@ -12,9 +12,12 @@ import {
   AlertTriangle,
   Plus
 } from 'lucide-react';
-import { useAuthStore } from '@/features/auth/store/AuthStore';
-import { useStoreStore } from '@/features/stores/store/StoreStore';
-import { useHasStores } from '@/shared/contexts/AppContext';
+import { useAuthStore } from '../../features/auth/store/AuthStore';
+import { useStoreStore } from '../../features/stores/store/StoreStore';
+import type { Store as StoreType } from '../../features/stores/types';
+import type { AuthState } from '../../features/auth/types';
+import type { StoreState } from '../../features/stores/types';
+import { useHasStores } from '../../shared/contexts/AppContext';
 import { NotificationDropdown } from '../notifications/NotificationDropdown';
 import { Button } from '../ui/Button';
 import { HeartbeatStatus } from '../ui/HeartbeatStatus';
@@ -25,12 +28,12 @@ import { HeartbeatStatus } from '../ui/HeartbeatStatus';
  */
 export function Navbar() {
   // IMPORTANT: Only subscribe to specific store slices needed
-  const user = useAuthStore(state => state.user);
-  const logout = useAuthStore(state => state.logout);
-  const stores = useStoreStore(state => state.stores);
-  const currentStore = useStoreStore(state => state.currentStore);
-  const setCurrentStore = useStoreStore(state => state.setCurrentStore);
-  
+  const user = useAuthStore((state: AuthState) => state.user);
+  const logout = useAuthStore((state: AuthState) => state.logout);
+  const stores = useStoreStore((state: StoreState) => state.stores);
+  const currentStore = useStoreStore((state: StoreState) => state.currentStore);
+  const setCurrentStore = useStoreStore((state: StoreState) => state.setCurrentStore);
+
   const hasStores = useHasStores();
   const location = useLocation();
   
@@ -79,6 +82,19 @@ export function Navbar() {
     return baseClass;
   };
   
+  // Update store mapping with proper types
+  const renderStores = (store: StoreType) => (
+    <button
+      key={store.id}
+      onClick={() => setCurrentStore(store.id)}
+      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+        currentStore?.id === store.id ? 'bg-gray-50' : ''
+      }`}
+    >
+      {store.name}
+    </button>
+  );
+
   return (
     <nav className="bg-slate-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -180,15 +196,7 @@ export function Navbar() {
                     <div className="py-1">
                       {hasStores ? (
                         <>
-                          {stores.map((store) => (
-                            <button
-                              key={store.id}
-                              onClick={() => handleStoreChange(store.id)}
-                              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
-                            >
-                              {store.name}
-                            </button>
-                          ))}
+                          {stores.map(renderStores)}
                           <div className="border-t border-slate-100 my-1"></div>
                         </>
                       ) : (

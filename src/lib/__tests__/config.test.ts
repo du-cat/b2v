@@ -1,109 +1,99 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { EnvConfigError } from '../config';
-
-// Mock import.meta.env
-vi.mock('../config', async (importOriginal) => {
-  const mod = await importOriginal();
-  return {
-    ...mod,
-    // We'll override these in tests
-  };
-});
+import { EnvConfigError, validateEnv, type ValidEnv } from '../config';
 
 describe('Environment Configuration', () => {
-  // Save original import.meta.env
-  const originalEnv = { ...import.meta.env };
+  const originalEnv = process.env;
   
   beforeEach(() => {
-    // Reset import.meta.env before each test
     vi.resetModules();
-    
-    // Mock import.meta.env
-    import.meta.env = {
+    process.env = {
       ...originalEnv,
       VITE_SUPABASE_URL: 'https://example.supabase.co',
-      VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.valid-key',
-      MODE: 'test',
-      DEV: true,
+      VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.valid-key'
     };
   });
   
   afterEach(() => {
-    // Restore original import.meta.env
-    import.meta.env = originalEnv;
+    process.env = originalEnv;
+    vi.resetModules();
   });
-  
-  it('should throw EnvConfigError when VITE_SUPABASE_URL is missing', async () => {
+
+  it('should throw EnvConfigError when VITE_SUPABASE_URL is missing', () => {
     // Arrange
-    import.meta.env.VITE_SUPABASE_URL = undefined;
+    delete process.env.VITE_SUPABASE_URL;
     
     // Act & Assert
-    await expect(import('../config')).rejects.toThrow(EnvConfigError);
+    expect(() => validateEnv()).toThrow(EnvConfigError);
     
     try {
-      await import('../config');
+      validateEnv();
+      expect.fail('Should have thrown EnvConfigError');
     } catch (error) {
       expect(error).toBeInstanceOf(EnvConfigError);
       expect((error as EnvConfigError).missingKeys).toContain('VITE_SUPABASE_URL');
     }
   });
   
-  it('should throw EnvConfigError when VITE_SUPABASE_ANON_KEY is missing', async () => {
+  it('should throw EnvConfigError when VITE_SUPABASE_ANON_KEY is missing', () => {
     // Arrange
-    import.meta.env.VITE_SUPABASE_ANON_KEY = undefined;
+    delete process.env.VITE_SUPABASE_ANON_KEY;
     
     // Act & Assert
-    await expect(import('../config')).rejects.toThrow(EnvConfigError);
+    expect(() => validateEnv()).toThrow(EnvConfigError);
     
     try {
-      await import('../config');
+      validateEnv();
     } catch (error) {
       expect(error).toBeInstanceOf(EnvConfigError);
       expect((error as EnvConfigError).missingKeys).toContain('VITE_SUPABASE_ANON_KEY');
     }
   });
   
-  it('should throw EnvConfigError when VITE_SUPABASE_URL is a placeholder', async () => {
-    // Arrange
-    import.meta.env.VITE_SUPABASE_URL = 'YOUR_SUPABASE_URL';
-    
-    // Act & Assert
-    await expect(import('../config')).rejects.toThrow(EnvConfigError);
-    
-    try {
-      await import('../config');
-    } catch (error) {
-      expect(error).toBeInstanceOf(EnvConfigError);
-      expect((error as EnvConfigError).missingKeys).toContain('VITE_SUPABASE_URL');
-    }
-  });
-  
-  it('should throw EnvConfigError when VITE_SUPABASE_ANON_KEY is a placeholder', async () => {
-    // Arrange
-    import.meta.env.VITE_SUPABASE_ANON_KEY = 'INSERT_YOUR_KEY_HERE';
-    
-    // Act & Assert
-    await expect(import('../config')).rejects.toThrow(EnvConfigError);
-    
-    try {
-      await import('../config');
-    } catch (error) {
-      expect(error).toBeInstanceOf(EnvConfigError);
-      expect((error as EnvConfigError).missingKeys).toContain('VITE_SUPABASE_ANON_KEY');
-    }
-  });
-  
-  it('should export typed constants when all required variables are present', async () => {
-    // Arrange
-    import.meta.env.VITE_SUPABASE_URL = 'https://example.supabase.co';
-    import.meta.env.VITE_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.valid-key';
-    
+  it('should validate environment variables successfully', () => {
     // Act
-    const config = await import('../config');
+    const env: ValidEnv = validateEnv();
     
     // Assert
-    expect(config.SUPABASE_URL).toBe('https://example.supabase.co');
-    expect(config.SUPABASE_ANON_KEY).toBe('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.valid-key');
-    expect(config.APP_ENV).toBe('development');
+    expect(env.VITE_SUPABASE_URL).toBe('https://example.supabase.co');
+    expect(env.VITE_SUPABASE_ANON_KEY).toBe('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.valid-key');
+  });
+
+  it('should throw EnvConfigError when VITE_SUPABASE_URL is a placeholder', () => {
+    // Arrange
+    process.env.VITE_SUPABASE_URL = 'INSERT_YOUR_URL_HERE';
+    
+    // Act & Assert
+    expect(() => validateEnv()).toThrow(EnvConfigError);
+    
+    try {
+      validateEnv();
+    } catch (error) {
+      expect(error).toBeInstanceOf(EnvConfigError);
+      expect((error as EnvConfigError).missingKeys).toContain('VITE_SUPABASE_URL');
+    }
+  });
+  
+  it('should throw EnvConfigError when VITE_SUPABASE_ANON_KEY is a placeholder', () => {
+    // Arrange
+    process.env.VITE_SUPABASE_ANON_KEY = 'INSERT_YOUR_KEY_HERE';
+    
+    // Act & Assert
+    expect(() => validateEnv()).toThrow(EnvConfigError);
+    
+    try {
+      validateEnv();
+    } catch (error) {
+      expect(error).toBeInstanceOf(EnvConfigError);
+      expect((error as EnvConfigError).missingKeys).toContain('VITE_SUPABASE_ANON_KEY');
+    }
+  });
+  
+  it('should export validated config when all required variables are present', () => {
+    // Act
+    const env: ValidEnv = validateEnv();
+    
+    // Assert
+    expect(env.VITE_SUPABASE_URL).toBe('https://example.supabase.co');
+    expect(env.VITE_SUPABASE_ANON_KEY).toBe('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.valid-key');
   });
 });

@@ -331,7 +331,14 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      debug_store_creation: {
+        Args: { test_owner_id: string };
+        Returns: StoreCreationDebug[];
+      };
+      test_auth_context: {
+        Args: Record<string, never>;
+        Returns: AuthContextTest[];
+      };
     }
     Enums: {
       [_ in never]: never
@@ -340,4 +347,19 @@ export interface Database {
       [_ in never]: never
     }
   }
+}
+
+// Debug function response types
+export interface StoreCreationDebug {
+  auth_uid: string | null;
+  provided_owner_id: string;
+  ids_match: boolean;
+  can_insert: boolean;
+  error_message: string;
+}
+
+export interface AuthContextTest {
+  current_user_id: string | null;
+  current_role: string;
+  session_valid: boolean;
 }

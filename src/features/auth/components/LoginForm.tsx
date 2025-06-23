@@ -1,57 +1,52 @@
 import { useState, FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { Shield, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../store/AuthStore';
 import { Button } from '../../../components/ui/Button';
 import type { LoginCredentials } from '../types';
 
-/**
- * Pure UI component for login form
- * CRITICAL: No direct Supabase calls - only uses store actions
- */
 export function LoginForm() {
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: '',
     password: ''
   });
-  const [showError, setShowError] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   
-  // IMPORTANT: Only subscribe to specific store slices to prevent unnecessary re-renders
   const login = useAuthStore(state => state.login);
   const isLoading = useAuthStore(state => state.isLoading);
   const error = useAuthStore(state => state.error);
-  
-  const navigate = useNavigate();
+  const clearError = useAuthStore(state => state.clearError);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setShowError(false);
+    setFormError(null);
+    clearError();
     
     if (!credentials.email || !credentials.password) {
-      setShowError(true);
+      setFormError('Please fill in all fields');
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(credentials.email)) {
-      setShowError(true);
+      setFormError('Please enter a valid email address');
       return;
     }
     
     try {
-      // CRITICAL: Only call store action, never direct API calls
+      console.log('🔄 Attempting login...');
       await login(credentials);
-      navigate('/dashboard');
+      // Let AppContext handle the navigation after successful login
+      console.log('✅ Login successful');
     } catch (error) {
-      // Error handling is done in the store
-      console.error('Login failed:', error);
+      console.error('❌ Login failed:', error);
+      // Error is already set in the store
     }
   };
 
   const handleInputChange = (field: keyof LoginCredentials, value: string) => {
     setCredentials(prev => ({ ...prev, [field]: value }));
-    if (showError) setShowError(false);
+    setFormError(null);
+    if (error) clearError();
   };
   
   return (
@@ -66,12 +61,12 @@ export function LoginForm() {
             Sign in to SentinelPOS Guardian
           </h2>
           
-          {error && (
+          {(error || formError) && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm flex items-start">
               <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium">Login Failed</p>
-                <p>{error}</p>
+                <p>{formError || error}</p>
               </div>
             </div>
           )}
@@ -98,9 +93,6 @@ export function LoginForm() {
                 <label htmlFor="password" className="block text-sm font-medium text-slate-700">
                   Password
                 </label>
-                <Link to="/forgot-password" className="text-sm text-teal-600 hover:text-teal-500">
-                  Forgot password?
-                </Link>
               </div>
               <input
                 id="password"
@@ -108,49 +100,27 @@ export function LoginForm() {
                 value={credentials.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="••••••••"
+                placeholder="Enter your password"
                 required
                 disabled={isLoading}
               />
             </div>
-            
-            {showError && !credentials.email && !credentials.password && (
-              <div className="text-sm text-red-600">
-                Please enter your email and password.
-              </div>
-            )}
-            
-            <div>
-              <Button
-                type="submit"
-                className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
-                isLoading={isLoading}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Signing in...' : 'Sign in'}
-              </Button>
-            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                  Signing in...
+                </div>
+              ) : (
+                'Sign in'
+              )}
+            </Button>
           </form>
-          
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-slate-500">Don't have an account?</span>
-              </div>
-            </div>
-            
-            <div className="mt-6">
-              <Link
-                to="/signup"
-                className="w-full flex justify-center py-2 px-4 border border-slate-300 rounded-md shadow-sm bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-              >
-                Create an account
-              </Link>
-            </div>
-          </div>
         </div>
       </div>
     </div>
