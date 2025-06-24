@@ -8,6 +8,7 @@ import { Switch } from '../ui/Switch';
 import { Select } from '../ui/Select';
 import { Badge } from '../ui/Badge';
 import { createSoundByType } from '../../utils/soundUtils';
+import { PushNotificationSetup } from './PushNotificationSetup';
 import toast from 'react-hot-toast';
 
 interface NotificationPreferences {
@@ -284,13 +285,16 @@ export function NotificationSettings() {
         </Button>
       </div>
       
+      {/* Push Notification Setup */}
+      <PushNotificationSetup />
+      
       {/* Audio Permission Notice */}
       <Card>
         <CardContent className="p-4">
           <div className="flex items-start space-x-3 text-sm">
             <Volume2 className="h-5 w-5 text-blue-500 mt-0.5" />
             <div>
-              <p className="font-medium text-slate-700">Audio Playbook Notice</p>
+              <p className="font-medium text-slate-700">Audio Playback Notice</p>
               <p className="text-slate-600 mt-1">
                 Different sound types will play unique audio patterns. If audio files are not available, 
                 generated sounds will be used instead. Click anywhere on the page first to enable audio if needed.
