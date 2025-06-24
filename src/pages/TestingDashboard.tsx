@@ -342,8 +342,8 @@ export default function TestingDashboard() {
               <span>Store Context</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className={`h-2 w-2 rounded-full ${import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? 'bg-green-500' : 'bg-amber-500'}`} />
-              <span>Google Places API</span>
+              <div className={`h-2 w-2 rounded-full ${import.meta.env.VITE_OPENCAGE_API_KEY ? 'bg-green-500' : 'bg-amber-500'}`} />
+              <span>OpenCage API</span>
             </div>
           </div>
         </CardContent>
