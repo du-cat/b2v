@@ -135,16 +135,20 @@ export const initializePushNotifications = async (userId: string): Promise<boole
       onMessage(messaging, (payload) => {
         console.log('Message received in foreground:', payload);
         
-        // Show toast notification
+        // Show toast notification without using JSX
         toast(
-          (t) => (
-            <div className="flex items-start space-x-3">
-              <div className="flex-1">
-                <p className="font-medium">{payload.notification?.title || 'New Notification'}</p>
-                <p className="text-sm">{payload.notification?.body || ''}</p>
-              </div>
-            </div>
-          ),
+          (t) => {
+            // Create elements programmatically instead of using JSX
+            const title = payload.notification?.title || 'New Notification';
+            const body = payload.notification?.body || '';
+            
+            return toast.message(
+              `${title}\n${body}`,
+              {
+                icon: getSeverityIcon(payload.data?.severity as string)
+              }
+            );
+          },
           {
             duration: 6000,
             icon: getSeverityIcon(payload.data?.severity as string),
@@ -163,7 +167,7 @@ export const initializePushNotifications = async (userId: string): Promise<boole
 /**
  * Get icon based on severity
  */
-const getSeverityIcon = (severity: string): React.ReactNode => {
+const getSeverityIcon = (severity: string): string => {
   switch (severity) {
     case 'critical':
       return '🚨';
