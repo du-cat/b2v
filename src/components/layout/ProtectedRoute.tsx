@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { useAppContext } from '../../shared/contexts/AppContext';
+import { useApp } from '../../shared/contexts/AppContext';
 import { ErrorBoundary } from '../ErrorBoundary';
-import { useAuthStore } from '@/features/auth/store/AuthStore';
+import { useAuthStore } from '../../features/auth/store/AuthStore';
+import type { AuthState } from '../../features/auth/types';
 import { Button } from '../ui/Button';
 import { RefreshCw } from 'lucide-react';
 
@@ -21,12 +22,12 @@ export function ProtectedRoute({
   requiresStore = false, 
   fallbackPath = '/login' 
 }: ProtectedRouteProps) {
-  const { isAppReady, hasValidSession, hasStores } = useAppContext();
+  const { isAppReady, hasValidSession, hasStores } = useApp();
   const navigate = useNavigate();
   
   // CRITICAL FIX: Add direct access to auth store to handle session expiration
-  const isAuthInitialized = useAuthStore(state => state.isInitialized);
-  const authError = useAuthStore(state => state.error);
+  const isAuthInitialized = useAuthStore((state: AuthState) => state.isInitialized);
+  const authError = useAuthStore((state: AuthState) => state.error);
   
   // CRITICAL FIX: Add timeout detection for app initialization
   const [initTimeout, setInitTimeout] = useState(false);

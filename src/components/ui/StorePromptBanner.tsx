@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Store, X } from 'lucide-react';
 import { Button } from './Button';
-import { useAppContext } from '../../shared/contexts/AppContext';
+import { useHasStores } from '../../shared/contexts/AppContext';
 import toast from 'react-hot-toast';
 
 interface StorePromptBannerProps {
@@ -12,7 +12,7 @@ interface StorePromptBannerProps {
 export function StorePromptBanner({ className }: StorePromptBannerProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [hasShownToast, setHasShownToast] = useState(false);
-  const { hasStores } = useAppContext();
+  const hasStores = useHasStores();
   
   // Show toast notification on first render if no stores
   useEffect(() => {
