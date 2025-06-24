@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Clock, Play, RefreshCw, AlertTriangle, Store, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
-import { useStoreStore } from '../store/storeStore';
+import { useAuthStore } from '@/features/auth/store/AuthStore';
+import { useStoreStore } from '@/features/stores/store/StoreStore';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
