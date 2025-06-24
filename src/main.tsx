@@ -6,6 +6,17 @@ import './index.css';
 import { EnvErrorScreen } from './components/EnvErrorScreen';
 import { EnvConfigError } from './lib/config';
 
+// Register service worker for push notifications
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/firebase-messaging-sw.js')
+    .then(registration => {
+      console.log('Service Worker registered with scope:', registration.scope);
+    })
+    .catch(error => {
+      console.error('Service Worker registration failed:', error);
+    });
+}
+
 // Import config to trigger validation
 try {
   // This import will throw if environment variables are missing
@@ -206,6 +217,7 @@ try {
     supabase_url_defined: !!import.meta.env.VITE_SUPABASE_URL,
     supabase_key_defined: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
     opencage_key_defined: !!import.meta.env.VITE_OPENCAGE_API_KEY,
+    firebase_config_defined: !!import.meta.env.VITE_FIREBASE_API_KEY,
     root_element_found: !!rootElement
   });
 
@@ -303,6 +315,7 @@ if (import.meta.env.DEV) {
     SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL ? '✅ Set' : '❌ Missing',
     SUPABASE_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing',
     OPENCAGE_KEY: import.meta.env.VITE_OPENCAGE_API_KEY ? '✅ Set' : '❌ Missing',
+    FIREBASE_CONFIG: import.meta.env.VITE_FIREBASE_API_KEY ? '✅ Set' : '❌ Missing',
   });
   
   // Add development debugging helpers to window
@@ -312,6 +325,7 @@ if (import.meta.env.DEV) {
     buildTime: new Date().toISOString(),
     hasSupabaseConfig: !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY),
     hasOpenCageConfig: !!import.meta.env.VITE_OPENCAGE_API_KEY,
+    hasFirebaseConfig: !!import.meta.env.VITE_FIREBASE_API_KEY,
     clearLocalStorage: () => {
       localStorage.removeItem('supabase.auth.token');
       localStorage.removeItem('currentStoreId');

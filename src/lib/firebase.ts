@@ -6,13 +6,13 @@ import toast from 'react-hot-toast';
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyDF1ICOF7H_oKLCfhkwNYdfdemY-UEdu6I",
+  authDomain: "retail-8a7e5.firebaseapp.com",
+  projectId: "retail-8a7e5",
+  storageBucket: "retail-8a7e5.firebasestorage.app",
+  messagingSenderId: "786252300078",
+  appId: "1:786252300078:web:4440fc78094aa7b57044bf",
+  measurementId: "G-9SN1BP2YET"
 };
 
 // Initialize Firebase

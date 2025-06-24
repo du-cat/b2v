@@ -20,10 +20,12 @@ export function validateEnvironment(): EnvValidationResult {
   
   const supabaseUrl = getEnvVar('VITE_SUPABASE_URL');
   const supabaseKey = getEnvVar('VITE_SUPABASE_ANON_KEY');
+  const firebaseApiKey = getEnvVar('VITE_FIREBASE_API_KEY');
   
   console.log('🔍 Environment validation check:', {
     supabaseUrl: supabaseUrl ? '✅ Set' : '❌ Missing',
     supabaseKey: supabaseKey ? '✅ Set' : '❌ Missing',
+    firebaseApiKey: firebaseApiKey ? '✅ Set' : '❌ Missing',
     mode: import.meta.env?.MODE || 'unknown'
   });
   
@@ -42,6 +44,11 @@ export function validateEnvironment(): EnvValidationResult {
     errors.push('VITE_SUPABASE_ANON_KEY must start with "ey" (JWT format)');
   } else if (supabaseKey.includes('your-anon-key') || supabaseKey.includes('placeholder')) {
     errors.push('VITE_SUPABASE_ANON_KEY contains placeholder values. Please update with your actual Supabase anon key from https://app.supabase.com/');
+  }
+  
+  // Check for Firebase configuration (optional but recommended)
+  if (!firebaseApiKey) {
+    warnings.push('VITE_FIREBASE_API_KEY is not defined. Push notifications will not work.');
   }
   
   // Check for OpenCage API key (optional)
@@ -128,6 +135,16 @@ VITE_SUPABASE_ANON_KEY=your-anon-key-here
 # OpenCage Data API (Optional - for live address autocomplete)
 # Get your API key from: https://opencagedata.com/
 VITE_OPENCAGE_API_KEY=your-opencage-api-key-here
+
+# Firebase Configuration (Required for Push Notifications)
+VITE_FIREBASE_API_KEY=your-firebase-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
+VITE_FIREBASE_MEASUREMENT_ID=your-measurement-id
+VITE_FIREBASE_VAPID_KEY=your-vapid-key
 
 # Development Settings
 VITE_APP_ENV=development`;

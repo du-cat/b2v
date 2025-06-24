@@ -8,13 +8,13 @@ importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compa
 // your app's Firebase config object.
 // https://firebase.google.com/docs/web/setup#config-object
 firebase.initializeApp({
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_AUTH_DOMAIN',
-  projectId: 'YOUR_PROJECT_ID',
-  storageBucket: 'YOUR_STORAGE_BUCKET',
-  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-  appId: 'YOUR_APP_ID',
-  measurementId: 'YOUR_MEASUREMENT_ID'
+  apiKey: "AIzaSyDF1ICOF7H_oKLCfhkwNYdfdemY-UEdu6I",
+  authDomain: "retail-8a7e5.firebaseapp.com",
+  projectId: "retail-8a7e5",
+  storageBucket: "retail-8a7e5.firebasestorage.app",
+  messagingSenderId: "786252300078",
+  appId: "1:786252300078:web:4440fc78094aa7b57044bf",
+  measurementId: "G-9SN1BP2YET"
 });
 
 // Retrieve an instance of Firebase Messaging so that it can handle background

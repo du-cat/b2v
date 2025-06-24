@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../features/auth/store/AuthStore';
 import { useStoreStore } from '../../features/stores/store/StoreStore';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
+import { initializePushNotifications } from '../../lib/firebase';
 
 interface AppContextValue {
   isAppReady: boolean;
@@ -82,6 +83,21 @@ export function AppProvider({ children }: AppProviderProps) {
       initializeStoreContext(user.id);
     }
   }, [user, isAuthInitialized, initializeStoreContext]);
+
+  // Initialize push notifications when user is authenticated
+  useEffect(() => {
+    if (user && isAuthInitialized && !isLoading) {
+      // Check if push notifications are enabled in localStorage
+      const pushEnabled = localStorage.getItem('pushNotificationsEnabled') === 'true';
+      
+      if (pushEnabled) {
+        console.log('🔔 Initializing push notifications for user:', user.id);
+        initializePushNotifications(user.id).catch(err => {
+          console.error('Failed to initialize push notifications:', err);
+        });
+      }
+    }
+  }, [user, isAuthInitialized, isLoading]);
 
   // Handle auth errors
   useEffect(() => {
