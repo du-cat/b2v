@@ -9,6 +9,7 @@ import { useStoreStore } from '@/features/stores/store/StoreStore';
 import { useDevicesStore } from '@/shared/stores';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { evaluateClientEvent } from '../utils/eventEvaluator';
 
 interface SimulatedEvent {
   id: string;
@@ -140,7 +141,7 @@ export default function EventSimulator() {
   const sendEvent = async (event: SimulatedEvent) => {
     try {
       // Create the event directly in the database
-      const { data, error } = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/events`, {
+      const { data, error: saveError } = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -152,7 +153,7 @@ export default function EventSimulator() {
           store_id: event.store_id,
           device_id: event.device_id,
           event_type: event.event_type,
-          severity: 'info', // Default severity
+          severity: 'info', // Default severity, will be updated by rules if needed
           payload: {
             employee_id: event.employee_id,
             amount: event.amount,
@@ -162,12 +163,18 @@ export default function EventSimulator() {
         })
       }).then(res => res.json());
       
-      if (error) {
-        throw new Error(error.message);
+      if (saveError) {
+        throw new Error(saveError.message);
       }
       
+      // Add to recent events list
       setRecentEvents(prev => [event, ...prev.slice(0, 9)]);
       setEventCount(prev => prev + 1);
+      
+      // Evaluate the event client-side to ensure rules are triggered
+      // This is a fallback in case the Edge Function isn't working
+      await evaluateClientEvent(event);
+      
       toast.success(`Event sent: ${event.event_type}`);
       
       return true;
