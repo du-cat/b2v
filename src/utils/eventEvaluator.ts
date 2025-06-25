@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { useNotificationStore } from '@/features/notifications/store/NotificationStore';
 import { useAuthStore } from '@/features/auth/store/AuthStore';
 import toast from 'react-hot-toast';
+import { playSoundSafely } from './soundUtils';
 
 /**
  * Evaluates an event for suspicious activity and creates alerts/notifications
@@ -56,6 +57,9 @@ export async function evaluateClientEvent(event: {
           icon: '⚠️'
         });
         
+        // Play alert sound
+        playAlertSound('warning');
+        
         return true;
       }
     }
@@ -76,6 +80,9 @@ export async function evaluateClientEvent(event: {
         icon: '🚨'
       });
       
+      // Play alert sound
+      playAlertSound('critical');
+      
       return true;
     }
 
@@ -94,6 +101,9 @@ export async function evaluateClientEvent(event: {
         duration: 5000,
         icon: '⚠️'
       });
+      
+      // Play alert sound
+      playAlertSound('warning');
       
       return true;
     }
@@ -114,6 +124,9 @@ export async function evaluateClientEvent(event: {
         icon: '⚠️'
       });
       
+      // Play alert sound
+      playAlertSound('warning');
+      
       return true;
     }
 
@@ -133,6 +146,9 @@ export async function evaluateClientEvent(event: {
         duration: 5000,
         icon: '🕒'
       });
+      
+      // Play alert sound
+      playAlertSound('info');
       
       return true;
     }
@@ -165,10 +181,13 @@ async function createAlert({
       .from('events')
       .update({ 
         severity,
-        payload: {
-          alert_rule: rule,
-          alert_message: message
-        }
+        payload: supabase.rpc('jsonb_deep_merge', {
+          target: supabase.from('events').select('payload').eq('id', event_id).single(),
+          source: {
+            alert_rule: rule,
+            alert_message: message
+          }
+        })
       })
       .eq('id', event_id);
     
@@ -228,6 +247,103 @@ async function createAlert({
 }
 
 /**
+ * Play appropriate sound based on alert severity
+ */
+function playAlertSound(severity: 'info' | 'warning' | 'critical') {
+  try {
+    let soundFile = '/sounds/default.mp3';
+    
+    switch (severity) {
+      case 'critical':
+        soundFile = '/sounds/alert.mp3';
+        break;
+      case 'warning':
+        soundFile = '/sounds/chime.mp3';
+        break;
+      case 'info':
+      default:
+        soundFile = '/sounds/default.mp3';
+        break;
+    }
+    
+    // Try to play the sound file
+    playSoundSafely(soundFile, 0.7).catch(error => {
+      console.warn('Failed to play alert sound:', error);
+      
+      // Fallback to Web Audio API if file playback fails
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        createSoundByType(severity, audioContext);
+      } catch (fallbackError) {
+        console.warn('Failed to play fallback sound:', fallbackError);
+      }
+    });
+  } catch (error) {
+    console.warn('Error playing alert sound:', error);
+  }
+}
+
+/**
+ * Create different sound types using Web Audio API
+ * This is a CSP-compliant alternative to playing audio files
+ */
+function createSoundByType(type: string, audioContext: AudioContext): void {
+  if (!audioContext) return;
+  
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  // Configure different sounds based on type
+  switch (type) {
+    case 'warning':
+      // Warning chime - multiple tones
+      oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+      oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+      oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8);
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.8);
+      break;
+      
+    case 'critical':
+      // Urgent alert - rapid beeps
+      oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
+      oscillator.type = 'square';
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      
+      // Create rapid beeping pattern
+      for (let i = 0; i < 3; i++) {
+        const startTime = audioContext.currentTime + (i * 0.3);
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(0.4, startTime + 0.05);
+        gainNode.gain.linearRampToValueAtTime(0, startTime + 0.15);
+      }
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 1);
+      break;
+      
+    case 'info':
+    default:
+      // Simple notification beep
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+      break;
+  }
+}
+
+/**
  * Hook to use the event evaluator with store integration
  */
 export function useEventEvaluator() {
@@ -261,6 +377,9 @@ export function useEventEvaluator() {
           duration: 5000,
           icon: '⚠️'
         });
+        
+        // Play alert sound
+        playAlertSound('warning');
         
         return true;
       } catch (error) {

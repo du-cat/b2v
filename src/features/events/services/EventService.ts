@@ -1,6 +1,7 @@
 import { supabase, safeSupabaseCall } from '../../../lib/supabase';
 import { playSoundSafely } from '../../../utils/soundUtils';
 import type { Event, EnhancedEvent } from '../types';
+import toast from 'react-hot-toast';
 
 /**
  * Event service following Single Responsibility Principle
@@ -231,6 +232,27 @@ export class EventService {
     // Play sound notification
     this.playNotificationSound(event.severity);
     
+    // Show toast notification
+    const severity = event.severity;
+    const message = event.payload.description || `${event.event_type} detected`;
+    
+    if (severity === 'suspicious') {
+      toast.error(`🚨 Critical Alert: ${message}`, {
+        duration: 6000,
+        icon: '🚨'
+      });
+    } else if (severity === 'warn') {
+      toast.warning(`⚠️ Warning: ${message}`, {
+        duration: 5000,
+        icon: '⚠️'
+      });
+    } else {
+      toast.info(`ℹ️ Info: ${message}`, {
+        duration: 4000,
+        icon: 'ℹ️'
+      });
+    }
+    
     // Log notification trigger
     console.log('🔔 EventService: Notification triggered for event:', {
       eventId: event.id,
@@ -239,12 +261,6 @@ export class EventService {
       isAnomaly: event.is_anomaly,
       anomalyScore: event.anomaly_score
     });
-    
-    // In a real app, you might also:
-    // - Send push notifications
-    // - Create database notification records
-    // - Send emails for critical events
-    // - Update notification store
   }
 
   /**

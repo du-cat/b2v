@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { NotificationService } from '../services/NotificationService';
 import type { NotificationState, Notification, CreateNotificationData } from '../types';
+import toast from 'react-hot-toast';
+import { playSoundSafely } from '../../../utils/soundUtils';
 
 /**
  * Notification store following Single Responsibility Principle
@@ -118,6 +120,20 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
           notifications: [result.notification!, ...state.notifications],
           unreadCount: state.unreadCount + 1
         }));
+        
+        // Show toast notification based on severity
+        const { message, severity } = notificationData;
+        
+        if (severity === 'critical') {
+          toast.error(`🚨 ${message}`, { duration: 6000 });
+          playSoundSafely('/sounds/alert.mp3');
+        } else if (severity === 'warning') {
+          toast.warning(`⚠️ ${message}`, { duration: 5000 });
+          playSoundSafely('/sounds/chime.mp3');
+        } else {
+          toast.info(`ℹ️ ${message}`, { duration: 4000 });
+          playSoundSafely('/sounds/default.mp3');
+        }
       }
     } catch (error) {
       console.error('❌ NotificationStore: Create notification failed:', error);
@@ -131,6 +147,15 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         get().updateNotification(notification);
       } else {
         get().addNotification(notification);
+        
+        // Show toast notification for new notifications
+        if (notification.severity === 'critical') {
+          toast.error(`🚨 ${notification.message}`, { duration: 6000 });
+        } else if (notification.severity === 'warning') {
+          toast.warning(`⚠️ ${notification.message}`, { duration: 5000 });
+        } else {
+          toast.info(`ℹ️ ${notification.message}`, { duration: 4000 });
+        }
       }
     });
   },

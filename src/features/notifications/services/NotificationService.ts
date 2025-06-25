@@ -187,6 +187,9 @@ export class NotificationService {
         ...result.data,
         severity: result.data.severity as NotificationSeverity
       };
+      
+      // Play notification sound based on severity
+      this.playNotificationSound(notification.severity);
 
       return { notification, error: null };
       
@@ -295,8 +298,43 @@ export class NotificationService {
       }
       
       // Use the safe play method that doesn't use string evaluation
-      playSoundSafely(soundFile).catch(error => {
+      playSoundSafely(soundFile, 0.7).catch(error => {
         console.warn('Failed to play notification sound:', error);
+        
+        // Fallback to Web Audio API if file playback fails
+        try {
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          if (audioContext) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Configure sound based on severity
+            if (severity === 'critical') {
+              oscillator.frequency.value = 880;
+              oscillator.type = 'square';
+              gainNode.gain.value = 0.3;
+              oscillator.start();
+              oscillator.stop(audioContext.currentTime + 0.5);
+            } else if (severity === 'warning') {
+              oscillator.frequency.value = 440;
+              oscillator.type = 'sine';
+              gainNode.gain.value = 0.3;
+              oscillator.start();
+              oscillator.stop(audioContext.currentTime + 0.3);
+            } else {
+              oscillator.frequency.value = 330;
+              oscillator.type = 'sine';
+              gainNode.gain.value = 0.2;
+              oscillator.start();
+              oscillator.stop(audioContext.currentTime + 0.2);
+            }
+          }
+        } catch (fallbackError) {
+          console.warn('Failed to play fallback sound:', fallbackError);
+        }
       });
     } catch (error) {
       console.warn('Failed to play notification sound:', error);

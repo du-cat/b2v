@@ -15,6 +15,7 @@ import type { Notification, NotificationSeverity } from '@/features/notification
  */
 export function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
+  const [hasNewNotifications, setHasNewNotifications] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   
@@ -52,6 +53,17 @@ export function NotificationDropdown() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  
+  // Flash notification bell when new notifications arrive
+  useEffect(() => {
+    if (unreadCount > 0 && !isOpen) {
+      setHasNewNotifications(true);
+      const timeout = setTimeout(() => {
+        setHasNewNotifications(false);
+      }, 3000);
+      return () => clearTimeout(timeout);
+    }
+  }, [unreadCount, isOpen]);
   
   const getSeverityIcon = (severity: NotificationSeverity) => {
     switch (severity) {
@@ -115,7 +127,10 @@ export function NotificationDropdown() {
       {/* Bell Icon with Badge */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
+        className={cn(
+          "relative p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors",
+          hasNewNotifications && "animate-pulse"
+        )}
       >
         <Bell className="h-6 w-6" />
         {unreadCount > 0 && (
@@ -127,7 +142,7 @@ export function NotificationDropdown() {
       
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-slate-200 z-50 max-h-96 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-slate-200 z-50 max-h-[80vh] overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-slate-100">
             <h3 className="text-lg font-semibold text-slate-900">Notifications</h3>
@@ -153,7 +168,7 @@ export function NotificationDropdown() {
           </div>
           
           {/* Content */}
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-[60vh] overflow-y-auto">
             {isLoading ? (
               <div className="flex justify-center items-center py-8">
                 <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-teal-500"></div>
