@@ -10,7 +10,8 @@ import {
   Monitor,
   Play,
   TestTube,
-  Shield
+  Shield,
+  Link
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -27,6 +28,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     { name: 'Reports', path: '/reports', icon: <FileText className="h-5 w-5" /> },
     { name: 'Devices', path: '/devices', icon: <Monitor className="h-5 w-5" /> },
     { name: 'Cameras', path: '/cameras', icon: <Video className="h-5 w-5" /> },
+    { name: 'Integrations', path: '/integrations', icon: <Link className="h-5 w-5" /> },
     { name: 'Simulator', path: '/simulator', icon: <Play className="h-5 w-5" /> },
     { name: 'Testing', path: '/testing', icon: <TestTube className="h-5 w-5" /> },
     { name: 'RLS Diagnostics', path: '/rls-diagnostics', icon: <Shield className="h-5 w-5" /> },

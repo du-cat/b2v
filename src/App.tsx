@@ -26,7 +26,11 @@ const Notifications = lazy(() => import('./pages/Notifications'));
 const EventSimulator = lazy(() => import('./pages/EventSimulator'));
 const TestingDashboard = lazy(() => import('./pages/TestingDashboard'));
 const RLSDiagnostics = lazy(() => import('./pages/RLSDiagnostics'));
+const Integrations = lazy(() => import('./pages/Integrations'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+
+// Lazy-loaded integration wizard
+const IntegrationWizard = lazy(() => import('./components/integrations/IntegrationWizard').then(module => ({ default: module.IntegrationWizard })));
 
 function LoadingFallback() {
   return (
@@ -154,6 +158,26 @@ function App() {
                   <ProtectedRoute>
                     <Suspense fallback={<LoadingFallback />}>
                       <EventSimulator />
+                    </Suspense>
+                  </ProtectedRoute>
+                </ErrorBoundary>
+              } />
+              
+              {/* Integrations routes */}
+              <Route path="integrations" element={
+                <ErrorBoundary>
+                  <ProtectedRoute>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Integrations />
+                    </Suspense>
+                  </ProtectedRoute>
+                </ErrorBoundary>
+              } />
+              <Route path="integrations/:providerId/setup" element={
+                <ErrorBoundary>
+                  <ProtectedRoute>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <IntegrationWizard />
                     </Suspense>
                   </ProtectedRoute>
                 </ErrorBoundary>
